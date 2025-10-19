@@ -1,0 +1,2 @@
+INSERT INTO "public"."doctors" ("id", "email", "full_name", "specialty", "created_at") VALUES ('d184f78e-c279-46e0-9405-13f595080dde', 'doctorJones@health.com', 'Indiana Jones', 'orthopedist', '2025-10-17 12:13:20.71627'), ('d83a5fa8-3c0c-4b9f-8cc2-1c2b9582d7e9', 'doctorCorleone@health.com', 'Michael Corleone', '
+pediatrician', '2025-10-17 12:14:11.797398'), ('e4e72045-994d-40d2-b059-dfd203a7d9c0', 'doctorBond@health.com', 'James Bond', 'cardiologist', '2025-10-17 12:13:38.507183');

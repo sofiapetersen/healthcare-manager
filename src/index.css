@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Medical Theme - Calming Blues & Teals */
+    --background: 210 40% 98%;
+    --foreground: 210 20% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 20%;
+
+    /* Primary - Medical Blue */
+    --primary: 200 95% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 200 95% 40%;
+    
+    /* Secondary - Teal Accent */
+    --secondary: 180 65% 92%;
+    --secondary-foreground: 200 95% 45%;
+
+    /* Status Colors */
+    --status-scheduled: 200 95% 45%;
+    --status-in-consultation: 38 92% 50%;
+    --status-completed: 142 71% 45%;
+    --status-cancelled: 0 84% 60%;
+    --status-no-show: 215 16% 47%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 180 65% 88%;
+    --accent-foreground: 200 95% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 200 95% 45%;
+
+    --radius: 0.75rem;
+
+    /* Medical Gradient */
+    --gradient-medical: linear-gradient(135deg, hsl(200 95% 45%), hsl(180 75% 55%));
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(200 95% 45% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(200 95% 45% / 0.12);
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 200 95% 55%;
+    --primary-foreground: 222 47% 11%;
+    --primary-hover: 200 95% 50%;
+
+    --secondary: 180 50% 20%;
+    --secondary-foreground: 200 95% 55%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 180 50% 20%;
+    --accent-foreground: 200 95% 55%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 200 95% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -1,0 +1,1630 @@
+{
+  "name": "testes_sofia",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        432
+      ],
+      "id": "088be42e-db54-4834-b403-cdb10bb77583",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        160,
+        432
+      ],
+      "id": "ad22791b-d52c-4b88-ab64-103453ba4e1e",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('GetPatients').item.json.telegram_id }}",
+        "text": "=Hi {{ $('GetPatients').item.json.first_name }},\nThis is a friendly reminder of your medical appointment on {{ $('Loop Over Items').item.json.appointment_date }} at  {{ $('Loop Over Items').item.json.appointment_time }} with Dr. {{ $json.full_name }}.\nPlease arrive 15 minutes early and bring any necessary documents.\n\nIf you need to reschedule, contact us in advance.\n\nBest regards,\nYour Healthcare Team",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        448
+      ],
+      "id": "462e54de-1930-412d-8ad7-af788e0e29d4",
+      "name": "Send a text message",
+      "webhookId": "6c6690b2-214d-4423-ab67-2ab385d3de87",
+      "credentials": {
+        "telegramApi": {
+          "id": "tzhEVxRBZlrzEXQB",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        1056
+      ],
+      "id": "fc9f09c7-7197-4fa7-8ac3-8b0fe2342740",
+      "name": "Telegram Trigger",
+      "webhookId": "fc6df827-72e9-4c6f-9985-f81aef02e14c",
+      "credentials": {
+        "telegramApi": {
+          "id": "tzhEVxRBZlrzEXQB",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        1056
+      ],
+      "id": "541e647d-c2ae-4f3b-9cd1-feb7c48f9b41",
+      "name": "Send a text message1",
+      "webhookId": "ae2514e3-b2bf-4309-80c6-b5446464cd31",
+      "credentials": {
+        "telegramApi": {
+          "id": "tzhEVxRBZlrzEXQB",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f9962d0f-1cd6-4d97-82bc-26b9c376058d",
+              "name": "first_name",
+              "value": "={{ $json.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "c08cb83f-b619-4823-a1ab-433c90b4394a",
+              "name": "patient_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d09dc4e9-bbae-49d9-94b5-4ab1c916d270",
+              "name": "telegram_id",
+              "value": "={{ $json.telegram_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        1056
+      ],
+      "id": "8948b0b6-0f67-4950-9151-c70b6c570ba0",
+      "name": "Vars1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "=# System Prompt - Medical Appointment Management Agent\n\nYou are Bruce Wayne, a virtual assistant specialized in medical appointment management. Your role is to help patients schedule, confirm, reschedule, or cancel their appointments in a friendly and efficient manner via Telegram.\n\n## Your Personality\n- Cordial, empathetic, and professional\n- Objective in responses but warm in service\n- Patient and understanding with patient questions\n- Uses clear and accessible language, avoiding medical jargon\n- Proactive in helping patients find the right doctor and time slot\n- **Context-aware**: Pay attention to what the patient says and adapt your response accordingly\n- **Efficient**: Don't ask questions when the patient has already provided information\n- **Smart**: Skip unnecessary steps when the patient's intent is clear\n\n## TODAY IS {{ $now }}\n\n## Your Capabilities\n\nYou have access to the following tools:\n\n1. **GetPatients**: Query all patients registered in the system\n2. **GetDoctors**: Query all doctors available and their specialties\n3. **GetAppointments**: Query all scheduled appointments (can filter by doctor_id)\n4. **CreateAppointment**: Create a new appointment\n5. **UpdateAppointment**: Update existing appointment date or time\n6. **DeleteAppointment**: Cancel an appointment\n\n## CRITICAL SCHEDULING GUARDRAILS\n\n**YOU MUST ALWAYS CHECK THESE RULES BEFORE SCHEDULING OR UPDATING:**\n\n### Rule 1: No Double Booking\n- **NEVER** schedule two appointments with the same doctor at the same date AND time\n- Always use **GetAppointments** (filtered by doctor_id) before confirming any scheduling\n\n### Rule 2: Minimum 30-Minute Gap\n- There **MUST BE** at least 30 minutes between appointments for the same doctor\n- Example: If Dr. Smith has an appointment at 14:00, the next available slot is 14:30 or later, OR 13:30 or earlier\n- **ALWAYS** check all appointments for that specific doctor on that date\n\n### Rule 3: Patient Identification (CRITICAL)\n- **NEVER** ask the patient for their ID - IDs are internal clinic information\n- **ALWAYS** ask for the patient's full name (first and last name)\n- Use **GetPatients** to search for the patient by name\n- Extract the patient_id from the GetPatients results\n- Use this patient_id when creating or updating appointments\n- If multiple patients have similar names, ask clarifying questions (date of birth, phone number last digits, etc.)\n\n### Rule 4: Doctor Identification\n- **NEVER** mention or ask for doctor IDs - these are internal\n- **ALWAYS** refer to doctors by their name and specialty\n- Use **GetDoctors** to retrieve available doctors and their specialties\n- Extract the doctor_id from GetDoctors results\n- When patient requests a specialty, show available doctors with their names and specialties\n\n### Rule 5: Validation Process for New Appointments\nBefore executing **CreateAppointment**, you MUST:\n1. Ask patient for their full name\n2. Use **GetPatients** to find the patient and get their patient_id\n3. Confirm the patient identity with them\n4. Ask which doctor or specialty they need\n5. Use **GetDoctors** to show available doctors (by name and specialty)\n6. Get the doctor_id from the results\n7. Ask for preferred date and time\n8. Use **GetAppointments** (filtered by doctor_id) to check conflicts\n9. Calculate time differences to ensure 30-minute minimum gap\n10. If no conflict, create the appointment\n11. If conflict exists, suggest alternative time slots\n\n### Rule 6: Validation Process for Updates\nBefore executing **UpdateAppointment**, you MUST:\n1. Use **GetAppointments** to retrieve existing appointments for that doctor\n2. Filter appointments by the requested doctor_id and date\n3. Check for conflicts on the requested date/time\n4. Calculate time differences between appointments\n5. If conflict exists, inform patient and suggest alternatives\n6. Only update if no conflicts exist\n\n### Rule 7: Conflict Response\nIf there's a scheduling conflict, respond with:\n- Clear explanation of the conflict\n- The conflicting appointment time (without revealing other patient names)\n- At least 2-3 alternative time slots that comply with the 30-minute rule\n- Be helpful and offer to check other dates if needed\n\n## Service Flow\n\n### 1. Initial Greeting & Intent Recognition\nWhen patient initiates contact:\n- **Listen carefully to their message** - they may already tell you what they need\n- If they mention scheduling/booking/appointment: Skip generic greeting and go directly to Step 2 (Patient Identification)\n- If they ask about existing appointment: Go directly to Step 3 (Appointment Query)\n- If they want to reschedule: Go directly to Step 4 (Rescheduling)\n- If they want to cancel: Go directly to Step 5 (Cancellation)\n- If unclear intent: \"Hi! Welcome to our clinic. How can I help you today?\"\n- If returning patient, greet by name: \"Hi [Name]! Great to hear from you.\"\n\n### 2. New Appointment Booking\nWhen patient wants to schedule an appointment (they may say: \"I want to schedule\", \"I need an appointment\", \"Can I book\", etc.):\n\n**Step 1 - Patient Identification:**\n- \"I'd be happy to help you schedule an appointment! May I have your full name, please?\"\n- Use **GetPatients** to find the patient\n- If found: \"Great! I found your record. Let me help you schedule your appointment.\"\n- If not found: \"I don't see you in our system yet. You may need to register first. Would you like me to transfer you to our registration desk?\"\n- If multiple matches: \"I found a few patients with that name. Could you provide [additional info] to confirm?\"\n\n**Step 2 - Doctor Selection:**\n- \"Which doctor would you like to see, or what's the reason for your visit?\"\n- Use **GetDoctors** to retrieve available doctors\n- Present options: \"We have Dr. [Name] who specializes in [specialty]. Would you like to book with them?\"\n- Get doctor_id from the selected doctor\n\n**Step 3 - Date and Time:**\n- \"What date and time work best for you?\"\n- Use **GetAppointments** filtered by doctor_id to check availability\n- Check 30-minute gap rule\n- If available: \"Perfect! [Date] at [Time] is available.\"\n- If conflict: \"That time is already taken. I have availability at [alternative times]. Which works for you?\"\n\n**Step 4 - Complaint/Reason:**\n- \"Could you briefly describe the reason for your visit?\"\n- Record the complaint\n\n**Step 5 - Confirmation:**\n- Use **CreateAppointment** with all the gathered information\n- Confirm: \"All set! Your appointment is scheduled for [Date] at [Time] with Dr. [Name] ([Specialty]). Please arrive 15 minutes early. See you then!\"\n\n### 3. Appointment Query\nWhen patient asks about their appointment:\n- Use **GetAppointments** to check their appointment\n- Provide: date, time, doctor name and specialty\n- Ask if they need to make any changes\n\n### 4. Rescheduling\nWhen patient requests rescheduling:\n- Confirm current appointment details\n- Ask for preferred new date and time\n- **MANDATORY**: Use **GetAppointments** (filtered by doctor_id) to check availability\n- Verify no conflicts with the doctor's schedule\n- Ensure 30-minute minimum gap\n- If available, use **UpdateAppointment**\n- Confirm the new appointment clearly\n- If conflict, offer alternatives following Rule 7\n\n### 5. Cancellation\nWhen patient requests cancellation:\n- Confirm appointment details\n- Ask reason (optional, don't pressure)\n- \"Just to confirm: you want to cancel your appointment on [date] at [time] with Dr. [Name]?\"\n- Use **DeleteAppointment** to cancel\n- \"Your appointment has been cancelled. Would you like to reschedule for another time?\"\n- Be empathetic and helpful\n\n## Important Guidelines\n\n### Date and Time Format\n- Accept flexible date formats from users (e.g., \"next Monday\", \"December 15th\")\n- Store in database as: YYYY-MM-DD for dates\n- Time format: HH:MM in 24-hour format (e.g., 14:30)\n- Always confirm date and time clearly in user-friendly format\n\n### Internal Information Security\n- **NEVER** mention or expose patient_id to users\n- **NEVER** mention or expose doctor_id to users\n- **NEVER** ask users for IDs\n- Always use names for identification\n- IDs are only for internal database operations\n\n### When to Use Each Tool\n\n**GetPatients**:\n- **MANDATORY** when creating a new appointment\n- When patient mentions their name\n- To verify patient identity\n- To retrieve patient_id for database operations\n\n**GetDoctors**:\n- **MANDATORY** when patient needs to choose a doctor\n- When patient asks about specialties\n- To show available doctors by name and specialty\n- To retrieve doctor_id for database operations\n\n**GetAppointments**:\n- Patient asks about their appointment\n- **MANDATORY** before creating or updating appointments\n- To check for scheduling conflicts (filter by doctor_id)\n- To verify doctor availability\n- To ensure 30-minute gap rule\n\n**CreateAppointment**:\n- After gathering: patient_id, doctor_id, date, time, and complaint\n- **ONLY** after verifying no conflicts exist\n- **ONLY** after confirming 30-minute gap rule\n\n**UpdateAppointment**:\n- Patient wants to change date OR time\n- **ONLY** after checking conflicts with GetAppointments\n- **ONLY** after confirming 30-minute gap rule\n- Confirm the change after execution\n\n**DeleteAppointment**:\n- Patient explicitly requests cancellation\n- After double confirmation from patient\n- Explain the action is irreversible\n\n### Error Handling\n- If patient not found in GetPatients: offer to help with registration\n- If appointment not found: verify patient name and try again\n- If scheduling conflict: be empathetic, explain clearly, offer alternatives\n- If tool returns error: apologize and suggest contacting clinic directly\n\n### Limitations\n- Do NOT invent availability information\n- Do NOT confirm times without verification via GetAppointments\n- Do NOT make medical decisions or diagnoses\n- Do NOT provide medical advice\n- Direct clinical questions to the doctor during the appointment\n\n## Response Examples\n\n**New Appointment - Patient Not Found:**\n\"I don't see a record with that name in our system. You may need to register first. Would you like me to help you contact our registration desk?\"\n\n**New Appointment - Doctor Selection:**\n\"We have the following doctors available:\n- Dr. Sarah Smith - Cardiology\n- Dr. John Davis - General Practice\n- Dr. Maria Garcia - Pediatrics\n\nWhich doctor would you like to see?\"\n\n**New Appointment - Successful:**\n\"Perfect! I've scheduled your appointment for December 20th at 2:30 PM with Dr. Sarah Smith (Cardiology). Please arrive 15 minutes early and bring your insurance card. Is there anything else I can help you with?\"\n\n**Rescheduling with Conflict:**\n\"I checked Dr. Smith's schedule and unfortunately 2:00 PM on that date is already booked. I have these times available:\n- 1:30 PM\n- 2:30 PM\n- 3:00 PM\n\nWhich time works better for you?\"\n\n**Successful Rescheduling:**\n\"Great! I've updated your appointment to January 15th at 10:00 AM with Dr. Smith. You're all set! See you then!\"\n\n**Cancellation:**\n\"I understand. Just to confirm: you want to cancel your appointment on December 20th at 2:30 PM with Dr. Sarah Smith? If yes, just let me know and I'll cancel it for you.\"\n\n## Tone of Voice\n- Warm and welcoming\n- Professional but conversational\n- Use emojis sparingly (only 1-2 per message, if appropriate)\n- Be brief but complete\n- Ask one question at a time\n- End messages with an open question when appropriate\n- Show empathy and patience\n\n## Critical Reminders\n- Patient safety and satisfaction are your priority\n- **BE CONTEXT-AWARE**: If patient says \"I want to schedule an appointment\", don't ask \"How can I help you?\" - go directly to asking for their name\n- **LISTEN ACTIVELY**: Extract information from what the patient says to skip unnecessary questions\n- **ALWAYS** use GetPatients to get patient_id - NEVER ask for it\n- **ALWAYS** use GetDoctors to get doctor_id - NEVER ask for it\n- **ALWAYS** verify conflicts before scheduling with GetAppointments\n- **NEVER** skip validation steps\n- **NEVER** expose internal IDs to users\n- Confirm before executing any action\n- Keep conversation history in mind\n- Be proactive in offering help\n- The 30-minute rule is NON-NEGOTIABLE\n- Always refer to doctors by name and specialty, never by ID"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        1056
+      ],
+      "id": "eddfc464-2025-4f8b-9919-03d2117bbe5b",
+      "name": "AppointmentConfirmation"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "emergency",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        1808
+      ],
+      "id": "2b9f0b22-717f-46fd-bc6a-8854af9a6608",
+      "name": "Webhook",
+      "webhookId": "b7ede683-ef7b-427d-933e-d57593a7d98b"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b1bbd09-98c4-45c6-bd79-7a5c7bdd1640",
+              "name": "doctor_name",
+              "value": "={{ $json.body.doctor_name }}",
+              "type": "string"
+            },
+            {
+              "id": "cf6fa2bc-6b95-4ca0-9af4-f8dfbf6183ec",
+              "name": "patient_first_name",
+              "value": "={{ $json.body.patient_first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "ce7d03ae-69fb-4286-8c7c-7645b1f58d22",
+              "name": "patient_last_name",
+              "value": "={{ $json.body.patient_last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "74823c2e-8de8-48a9-80ec-f0f46a352736",
+              "name": "appointment_date",
+              "value": "={{ $json.body.appointment_date }}",
+              "type": "string"
+            },
+            {
+              "id": "5c01fa66-f8e6-4011-9ecb-3300df342e9c",
+              "name": "appointment_time",
+              "value": "={{ $json.body.appointment_time }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        1808
+      ],
+      "id": "3c1b2d34-682e-4367-ac35-049b2c4497d5",
+      "name": "Vars2"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.telegram_id }}",
+        "text": "=Hi {{ $json.first_name }},\nFor external problems we will have to reschedule your medical appointment on {{ $('Vars2').item.json.appointment_date }} at {{ $('Vars2').item.json.appointment_time }} with Dr. {{ $('Vars2').item.json.doctor_name }}.\nPlease let us know when you can.\n\nBest regards,\nYour Healthcare Team",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        1808
+      ],
+      "id": "688354c1-924f-42c7-8b08-120afc5c2e72",
+      "name": "Send a text message4",
+      "webhookId": "ae2514e3-b2bf-4309-80c6-b5446464cd31",
+      "credentials": {
+        "telegramApi": {
+          "id": "tzhEVxRBZlrzEXQB",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "patients",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "first_name",
+              "keyValue": "={{ $json.patient_first_name }}"
+            },
+            {
+              "keyName": "last_name",
+              "keyValue": "={{ $json.patient_last_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        160,
+        1808
+      ],
+      "id": "7b40dbf2-1bd3-4fb2-a27a-e8737802ded9",
+      "name": "Get a row3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.patient_id }}",
+        "tableName": "n8n_history",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        1168,
+        1264
+      ],
+      "id": "556b7959-8e0c-4dd6-b853-fb165d921724",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "WbCfFZh4ot369zpC",
+          "name": "sofia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "appointments",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.patient_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "appointment_date",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues0_Field_Value', `if the patient wants to reschedule the date (day and month) of the appointment update here with the new date`, 'string') }}"
+            },
+            {
+              "fieldId": "appointment_time",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues1_Field_Value', `if the patient wants to reschedule the time (hour and minute) of the appointment update here with the new time`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        1440
+      ],
+      "id": "d59adc67-febf-4a17-9382-21361b9d648e",
+      "name": "UpdateAppointment",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "appointments",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "doctor_id",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Field_Value', `doctor's id`, 'string') }}"
+            },
+            {
+              "keyName": "appointment_date",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions1_Field_Value', `date (year-month-day) when patient wants to schedule`, 'string') }}"
+            },
+            {
+              "keyName": "appointment_time",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions2_Field_Value', `time (hour:minute:second) when patient wants to schedule`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        1440
+      ],
+      "id": "5e4ead8a-e50f-4bfc-a2b2-e653cd93e06a",
+      "name": "GetApointments",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "appointments",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "patient_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        1440
+      ],
+      "id": "e284d25b-5c9f-4803-8700-7cda71c3349e",
+      "name": "DeleteAppointment",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        1264
+      ],
+      "id": "a94d3ef8-db8a-4017-9fda-194dd7f6f117",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "f60lShO7jP9qch3S",
+          "name": "OpenAi paulo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_history",
+          "mode": "list",
+          "cachedResultName": "n8n_history"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $('GetPatients').item.json.id }}",
+            "message": "={\n  \"type\": \"ai\",\n  \"content\": \"{{ $json.result.text.replace(/\\n+/g, ' ') }}\",\n  \"tool_calls\": [],\n  \"additional_kwargs\": {},\n  \"response_metadata\": {},\n  \"invalid_tool_calls\": []\n}\n"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1696,
+        448
+      ],
+      "id": "b83f5aea-c964-4ded-a856-c25a60c0e255",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "WbCfFZh4ot369zpC",
+          "name": "sofia"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "n8n_history",
+          "mode": "list",
+          "cachedResultName": "n8n_history"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $('Get a row3').item.json.id }}",
+            "message": "={\n  \"type\": \"ai\",\n  \"content\": \"{{ $json.result.text.replace(/\\n+/g, ' ') }}\",\n  \"tool_calls\": [],\n  \"additional_kwargs\": {},\n  \"response_metadata\": {},\n  \"invalid_tool_calls\": []\n}\n"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        592,
+        1808
+      ],
+      "id": "8e538e62-f263-465e-a91b-b498ca38ee2c",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "WbCfFZh4ot369zpC",
+          "name": "sofia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "appointments",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        432
+      ],
+      "id": "1537bbfe-36a8-4fa4-be5f-2893895bfa88",
+      "name": "GetAppointments",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n\nfunction getBrazilTime() {\n  const now = new Date();\n\n  const offsetMs = -3 * 60 * 60 * 1000;\n  return new Date(now.getTime() + offsetMs);\n}\n\nconst today = getBrazilTime();\nconst tomorrow = new Date(today);\ntomorrow.setDate(today.getDate() + 1);\n\nconst pad = n => String(n).padStart(2, '0');\nconst dataTomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;\n\nreturn items.map(item => {\n  const a = item.json;\n  const isTomorrow = a.appointment_date === dataTomorrowStr;\n  return {\n    json: {\n      ...a,\n      tomorrow: isTomorrow\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        480
+      ],
+      "id": "0d59fbb3-cca9-4b3f-af05-496e4279cd62",
+      "name": "IsTomorrow?",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "24becfc4-fcdd-49cd-84e1-5351c2b9e7b0",
+              "leftValue": "={{ $json.tomorrow }}",
+              "rightValue": "={{ $('Loop Over Items').item.json.id }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        528
+      ],
+      "id": "e8abf8f8-5466-47fa-bb50-77b075aacf4f",
+      "name": "IfIsTomorrow"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "patients",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.patient_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        960,
+        448
+      ],
+      "id": "6a953ff4-f2ef-4394-8f76-f7053f22bc56",
+      "name": "GetPatients",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "doctors",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Loop Over Items').item.json.doctor_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        448
+      ],
+      "id": "ae88f71c-7504-4aa9-b7e7-b9287fb269a5",
+      "name": "GetDoctorName",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        -48
+      ],
+      "id": "74fdd81b-7573-4a66-9a28-7c71703808b1",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "appointments",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -48
+      ],
+      "id": "67f3b2ca-43aa-48c0-bf1f-5b6b1cb2e5b3",
+      "name": "GetAppointments1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        192,
+        -48
+      ],
+      "id": "7f627617-1a7b-46bb-b8c6-e51363cb01f2",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        752,
+        -80
+      ],
+      "id": "ce23f2da-e78b-4bbc-8f02-dd64ca59b6ef",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "doctors",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.doctor_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        976,
+        0
+      ],
+      "id": "51636a4f-c17e-409a-9b9e-3cfad9a7bba8",
+      "name": "GetDoctors",
+      "executeOnce": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Daily Summary Report",
+        "emailType": "text",
+        "message": "=Hello Dr. {{ $json.full_name }},\n\nHere’s your summary for today ({{ $now.toFormat('yyyy-MM-dd') }}):\n\n- Total appointments today: {{ $('Loop Over Items2').item.json.total_today }}\n- Completed appointments: {{ $('Loop Over Items2').item.json.completed }}\n- No-show appointments: {{ $('Loop Over Items2').item.json.no_show }}\n\nThank you for your dedication and care.  \nHave a great evening!\n\nBest regards,  \nYour Healthcare Team",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "d4bd0eb8-82e5-4e12-98dc-f7f4bf5b7752",
+      "name": "SendSummaryReport",
+      "webhookId": "cd51412f-65e2-4ea8-ba2f-95cd6a170d57",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "c7HuHZDMH74wsmpz",
+          "name": "Gmail account Sofia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nfunction getBrazilDateString() {\n  const now = new Date();\n  const offsetMs = -3 * 60 * 60 * 1000;\n  const brTime = new Date(now.getTime() + offsetMs);\n  const pad = n => String(n).padStart(2, '0');\n  return `${brTime.getFullYear()}-${pad(brTime.getMonth() + 1)}-${pad(brTime.getDate())}`;\n}\n\nconst todayStr = getBrazilDateString();\n\nreturn items.map(item => {\n  const a = item.json;\n  const isToday = a.appointment_date === todayStr;\n\n  return {\n    json: {\n      doctor_id: a.doctor_id,\n      status: a.status,\n      appointment_date: a.appointment_date,\n      isToday\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        48
+      ],
+      "id": "826e26a0-216b-4d92-8ab3-c68dd3ebad2b",
+      "name": "CountAppointments"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst doctorStats = {};\n\nfor (const item of items) {\n  const a = item.json;\n  if (!a.isToday) continue; \n\n  const doctorId = a.doctor_id || 'unknown';\n  if (!doctorStats[doctorId]) {\n    doctorStats[doctorId] = { completed: 0, no_show: 0, total_today: 0 };\n  }\n\n  doctorStats[doctorId].total_today++;\n\n  const status = (a.status || '').toLowerCase().trim();\n\n  if (status === 'completed') doctorStats[doctorId].completed++;\n  if (status === 'no show' || status === 'no_show') doctorStats[doctorId].no_show++;\n}\n\nconst result = Object.entries(doctorStats).map(([doctor_id, stats]) => ({\n  json: {\n    doctor_id,\n    completed: stats.completed,\n    no_show: stats.no_show,\n    total_today: stats.total_today\n  }\n}));\n\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -80
+      ],
+      "id": "bd225e69-741f-4791-a700-4bfb1a064527",
+      "name": "AgreggateAppointments"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "doctors",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        1440
+      ],
+      "id": "a9f8a94e-0d8c-431c-a72a-1c0f893f5b63",
+      "name": "GetDoctors1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "appointments",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "appointment_date",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues0_Field_Value', `date (day and month) of the appointment`, 'string') }}"
+            },
+            {
+              "fieldId": "appointment_time",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues1_Field_Value', `the time (hour and minute) of the appointment `, 'string') }}"
+            },
+            {
+              "fieldId": "doctor_id",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues2_Field_Value', `doctors id`, 'string') }}"
+            },
+            {
+              "fieldId": "patient_id",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues3_Field_Value', `patients id`, 'string') }}"
+            },
+            {
+              "fieldId": "complaint",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues4_Field_Value', `patients complaint`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        848,
+        1440
+      ],
+      "id": "833b5c7f-b6bd-4361-a659-23d194b476fd",
+      "name": "CreateAppointment",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "patients",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        1440
+      ],
+      "id": "3c86d6aa-0bff-4d89-8bed-74686e9808d7",
+      "name": "GetPatients1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "patients",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegram_id",
+              "keyValue": "={{ $json.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        48,
+        1056
+      ],
+      "id": "eb35b2bc-ad90-41f1-9eb9-fc83d51fcc0d",
+      "name": "Get a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1db998c9-a31f-4d94-8439-6a5043a603ee",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        1056
+      ],
+      "id": "13163fdc-79dd-4bab-9565-07849f3be342",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "tableId": "patients",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "first_name",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.first_name }}"
+            },
+            {
+              "fieldId": "telegram_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            },
+            {
+              "fieldId": "last_name",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.last_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        576,
+        1200
+      ],
+      "id": "60508bfe-ec1b-40f6-bb2a-34e8dd7e6750",
+      "name": "CreatePatient",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "patients",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "first_name",
+              "condition": "eq",
+              "keyValue": "={{ $json.first_name }}"
+            },
+            {
+              "keyName": "last_name",
+              "condition": "eq",
+              "keyValue": "={{ $json.last_name }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "telegram_id",
+              "fieldValue": "={{ $('Telegram Trigger').item.json.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        576,
+        912
+      ],
+      "id": "25641ab0-ffcf-4698-8581-e6633e9e8bb9",
+      "name": "UpdatePatient",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VY1mgsyo1drQDMd0",
+          "name": "sofia2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Daily Summary Report\n",
+        "height": 464,
+        "width": 1744,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        -176
+      ],
+      "typeVersion": 1,
+      "id": "d2e7e1c9-1807-476d-858b-91cdd1e9c982",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Daily Patient Remember\n",
+        "height": 464,
+        "width": 2208,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        336
+      ],
+      "typeVersion": 1,
+      "id": "41d4aa87-03de-4f68-bc5d-14707cb64d52",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## AI Assistant\n\n",
+        "height": 736,
+        "width": 2176,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        880
+      ],
+      "typeVersion": 1,
+      "id": "4831a328-44af-4773-9698-66432624318c",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## A Reschedule question\n\n\n",
+        "height": 352,
+        "width": 1184,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        1712
+      ],
+      "typeVersion": 1,
+      "id": "da2ed38b-79c2-4411-b668-0e02f9bbb714",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "connection": "close",
+            "host": "n8n.maxgrow.pro",
+            "x-real-ip": "168.205.178.130",
+            "x-forwarded-for": "168.205.178.130",
+            "x-forwarded-proto": "https",
+            "content-length": "144",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "content-type": "application/json",
+            "sec-ch-ua-mobile": "?0",
+            "accept": "*/*",
+            "origin": "https://88654db1-a346-4d9c-8c80-59520ea3971c.lovableproject.com",
+            "sec-fetch-site": "cross-site",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            "referer": "https://88654db1-a346-4d9c-8c80-59520ea3971c.lovableproject.com/",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "priority": "u=1, i"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "doctor_name": "Joel",
+            "patient_first_name": "Sofia",
+            "patient_last_name": "Petersen",
+            "appointment_date": "2025-10-18",
+            "appointment_time": "10:30:00"
+          },
+          "webhookUrl": "https://n8n.maxgrow.pro/webhook-test/emergency",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GetAppointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "IsTomorrow?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vars1": {
+      "main": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AppointmentConfirmation": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Vars2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vars2": {
+      "main": [
+        [
+          {
+            "node": "Get a row3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row3": {
+      "main": [
+        [
+          {
+            "node": "Send a text message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateAppointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetApointments": {
+      "ai_tool": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteAppointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message4": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetAppointments": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IsTomorrow?": {
+      "main": [
+        [
+          {
+            "node": "IfIsTomorrow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfIsTomorrow": {
+      "main": [
+        [
+          {
+            "node": "GetPatients",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetPatients": {
+      "main": [
+        [
+          {
+            "node": "GetDoctorName",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetDoctorName": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "GetAppointments1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetAppointments1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "AgreggateAppointments",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CountAppointments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GetDoctors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetDoctors": {
+      "main": [
+        [
+          {
+            "node": "SendSummaryReport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendSummaryReport": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CountAppointments": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AgreggateAppointments": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetDoctors1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateAppointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetPatients1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AppointmentConfirmation",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "UpdatePatient",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CreatePatient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreatePatient": {
+      "main": [
+        [
+          {
+            "node": "Vars1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdatePatient": {
+      "main": [
+        [
+          {
+            "node": "Vars1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f26a0418-daf6-46cc-a219-177fa1bff736",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6a6e6f724b50f649394efda30179ae7c7349d6a87e885b238e94712df416c59d"
+  },
+  "id": "64XQbFhawgWEPKUq",
+  "tags": []
+}
